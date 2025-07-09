@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Currículo Interativo - Alexandro Laube</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Warm Neutral Harmony -->
+    <!-- Application Structure Plan: A single-page application with a top-down narrative flow. It starts with a summary and key stats, followed by the main interactive components: a skills dashboard for filtering and a vertical timeline for detailed exploration. This structure allows users to get a quick overview and then dive deep into the areas that interest them most, such as filtering the timeline by a specific skill. The goal is to transform a static CV into a dynamic exploration tool that highlights expertise effectively. -->
+    <!-- Visualization & Content Choices: 1. Career Timeline (HTML/CSS/JS): Goal is to show career progression. Interactive cards expand on click to reveal details, providing a layered information experience. 2. Skills Dashboard (HTML/CSS/JS buttons): Goal is to organize and allow filtering. Users can click a skill to see where it was applied, directly answering recruiter questions. 3. Skills Frequency Chart (Chart.js/Canvas): Goal is to visually compare key technology usage. A horizontal bar chart provides a quick, clear comparison of the most used technologies throughout the career. This combination of elements offers multiple, interconnected ways to understand the candidate's profile. 4. Certifications List (HTML/CSS): Goal is to provide detailed, verifiable credentials in a clear, organized format. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #F8F7F4;
+            color: #3d405b;
+        }
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 19px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background-color: #e0e0e0;
+        }
+        .timeline-item:last-child::before {
+            display: none;
+        }
+        .timeline-dot {
+            position: absolute;
+            left: 10px;
+            top: 4px;
+            height: 20px;
+            width: 20px;
+            background-color: #81b29a;
+            border-radius: 50%;
+            border: 3px solid #F8F7F4;
+        }
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .skill-tag.active {
+            background-color: #81b29a;
+            color: #ffffff;
+            font-weight: 500;
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+        @media (min-width: 768px) {
+            .chart-container {
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <div class="container mx-auto p-4 md:p-8 max-w-6xl">
+
+        <header class="text-center mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-800">Alexandro Laube</h1>
+            <p class="text-xl md:text-2xl text-gray-600 mt-2">Programador Delphi | Analista de Sistemas</p>
+            <div class="flex justify-center flex-wrap items-center space-x-4 mt-4 text-gray-500">
+                <span>(47) 9 9644-4708</span>
+                <span class="hidden md:inline">•</span>
+                <span>alexandrolaube@yahoo.com.br</span>
+                <span class="hidden md:inline">•</span>
+                <a href="https://www.linkedin.com/in/alexandro-laube" target="_blank" class="hover:text-[#81b29a] transition-colors">LinkedIn</a>
+            </div>
+        </header>
+
+        <main>
+            <section id="summary" class="bg-white/60 p-6 rounded-xl shadow-sm mb-12 border border-gray-200/80">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">Resumo Profissional</h2>
+                <p class="text-gray-600 leading-relaxed">
+                    Analista e Desenvolvedor Delphi (Pleno/Sênior) com 15 anos de experiência sólida em sistemas ERP e BI (Inteligência de Negócios). Proficiente em diversas bases de dados, incluindo Firebird, SQL Server, MySQL, PostgreSQL, SQLite e Oracle. Possui expertise em ERP para manufatura, NF-e, PAF-ECF, boletos, NFS-e, compra, estoque e balanças, e em BI com JSON, REST, ETL, PL/SQL, planilhas, gráficos e dashboards. Atua também como Analista de Negócios com foco em Reengenharia de Software, com vasta experiência em engenharia reversa, documentação de regras de negócio em sistemas legados e suporte à migração para novas arquiteturas.
+                </p>
+            </section>
+            
+            <section id="skills-dashboard" class="mb-12">
+                 <h2 class="text-2xl font-bold text-gray-800 mb-2 text-center">Painel de Competências</h2>
+                 <p class="text-gray-600 mb-6 text-center max-w-3xl mx-auto">Explore minha carreira de forma interativa. Clique em uma competência abaixo para filtrar a linha do tempo e ver as experiências onde a utilizei. O gráfico de barras mostra a frequência das principais tecnologias em meus projetos, oferecendo um rápido panorama da minha especialização técnica.</p>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div id="skills-container" class="bg-white/60 p-6 rounded-xl shadow-sm border border-gray-200/80">
+                         <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xl font-bold text-gray-700">Filtrar por Competência</h3>
+                            <button id="reset-filter" class="text-sm bg-[#e07a5f] text-white py-1 px-3 rounded-full hover:bg-[#d46a50] transition-colors">Limpar Filtro</button>
+                        </div>
+                        <div id="skills-list" class="flex flex-wrap gap-2"></div>
+                    </div>
+                    <div class="bg-white/60 p-6 rounded-xl shadow-sm border border-gray-200/80">
+                        <h3 class="text-xl font-bold text-gray-700 mb-4 text-center">Frequência de Tecnologias Chave</h3>
+                        <div class="chart-container">
+                            <canvas id="skillsChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="experience" class="mb-12">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">Linha do Tempo da Carreira</h2>
+                <p class="text-center text-gray-600 mb-6">Clique em cada cargo para expandir e ver mais detalhes sobre as responsabilidades e tecnologias utilizadas.</p>
+                <div id="timeline-container" class="relative">
+                </div>
+                 <p id="no-results" class="text-center text-gray-500 py-8 hidden">Nenhuma experiência encontrada para o filtro selecionado.</p>
+            </section>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <section id="education" class="bg-white/60 p-6 rounded-xl shadow-sm border border-gray-200/80">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Formação Acadêmica</h2>
+                    <div>
+                        <h3 class="text-lg font-bold text-[#81b29a]">Bacharelado em Sistemas de Informação</h3>
+                        <p class="text-gray-600">UNIVILLE, Joinville</p>
+                        <p class="text-gray-500 text-sm">MARÇO DE 2006 – DEZEMBRO DE 2009</p>
+                    </div>
+                </section>
+                <section id="certifications" class="bg-white/60 p-6 rounded-xl shadow-sm border border-gray-200/80">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-4">Certificações</h2>
+                    <div class="space-y-4 text-sm">
+                        <div>
+                            <h3 class="font-bold text-gray-700">Be Compliance (2024-2025)</h3>
+                            <p class="text-gray-600">Segurança da Informação, LGPD, GDPR, Phishing, Cookies.</p>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-gray-700">TDC - The Developer’s Conference (2019)</h3>
+                            <p class="text-gray-600">Testes, DevOps, Management 3.0, Gestão Ágil, Agile Coaching.</p>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-gray-700">FireBase - Firebird (2014)</h3>
+                            <p class="text-gray-600">Treinamento em Firebird (8 Hrs).</p>
+                        </div>
+                         <div>
+                            <h3 class="font-bold text-gray-700">Educaville (2013)</h3>
+                            <p class="text-gray-600">Situação Tributária (12 Hrs).</p>
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+        </main>
+
+        <footer class="text-center mt-12 text-gray-400 text-sm">
+            <p>Currículo Interativo desenvolvido para Alexandro Laube. © 2025</p>
+        </footer>
+    </div>
+
+    <script>
+        const experiencesData = [
+            {
+                company: 'ICI - Instituto de Cidades Inteligentes',
+                location: 'Curitiba',
+                role: 'Analista de Negócios com foco em Reengenharia de Software',
+                period: 'NOV 2022 – JUL 2025',
+                description: [
+                    'Analisar código-fonte legado em Delphi.',
+                    'Mapear as regras de negócio embutidas na lógica do sistema.',
+                    'Identificar não conformidades e aplicar melhorias.',
+                    'Documentar processos e funcionalidades técnicas.',
+                    'Traduzir funcionalidades para uma nova arquitetura.',
+                    'Apoiar na migração ou reescrita do sistema em novas tecnologias.',
+                    'Aplicar novas funcionalidades no sistema legado.',
+                    'Realizar intervenções na base de dados.'
+                ],
+                skills: ['JSON', 'XML', 'ETL', 'SQL', 'SQL Server', 'REST', 'SOAP', 'WSDL', 'Delphi', 'ReportBuilder', 'DevExpress', 'DLL', 'Scrum', 'SVN', 'GITLab', 'LGPD']
+            },
+            {
+                company: 'WeKnow Business Intelligence',
+                location: 'Joinville',
+                role: 'Desenvolvedor Delphi',
+                period: 'NOV 2018 – OUT 2022',
+                description: [
+                    'Analisar e implementar novas funcionalidades.',
+                    'Realizar manutenção no sistema de BI em Delphi.',
+                    'Desenvolver e manter dashboards.',
+                    'Trabalhar com serviços Windows Server para e-mail, SMS e Telegram.',
+                    'Executar manutenção backend em Delphi para consumo por frontend AngularJS.',
+                    'Realizar intervenções em base de dados.'
+                ],
+                skills: ['JSON', 'ETL', 'SQL', 'BI', 'Dashboards', 'Oracle', 'PostgreSQL', 'SQL Server', 'MySQL', 'MonetDB', 'SQLite', 'SMS', 'Telegram', 'E-mail', 'Planning Poker', 'Scrum', 'Delphi', 'REST', 'DevExpress', 'LGPD', 'SVN', 'GITLab']
+            },
+            {
+                company: 'Mwa Sistemas',
+                location: 'Joinville',
+                role: 'Analista e Desenvolvedor Delphi',
+                period: 'ABR 2018 – NOV 2018',
+                description: [
+                    'Analisar documentação fiscal do ano corrente.',
+                    'Analisar e reestruturar o sistema emissor de cupom fiscal.',
+                    'Obter homologação de PAF-ECF 02.05 junto à UNIFIL (Londrina).'
+                ],
+                skills: ['ERP', 'Cupom Fiscal', 'PAF-ECF', 'NF-e', 'NFS-e', 'CTe', 'Boletos', 'Febraban', 'SQL', 'Firebird', 'SQL Server', 'Delphi', 'ACBr', 'DLL', 'XML', 'SVN']
+            },
+            {
+                company: 'Opentech',
+                location: 'Joinville',
+                role: 'Desenvolvedor Delphi',
+                period: 'FEV 2017 – MAI 2017',
+                description: [
+                    'Realizar manutenção em sistemas de rastreamento (gerenciamento de risco).'
+                ],
+                skills: ['SQL Server', 'Delphi', 'Scrum', 'SVN', 'GITLab']
+            },
+            {
+                company: 'G1 Sistemas',
+                location: 'Joinville',
+                role: 'Analista e Desenvolvedor Delphi',
+                period: 'MAR 2014 – JAN 2017',
+                description: [
+                    'Analisar regras de negócio.',
+                    'Desenvolver novas funcionalidades.',
+                    'Realizar manutenção nos sistemas gerenciais (ERP) e fiscais.',
+                    'Obter homologação de PAF-ECF 02.02 junto à UNIFIL (Londrina).',
+                    'Realizar intervenção em banco de dados Firebird.',
+                    '<strong>Projetos de Destaque:</strong>',
+                    '<strong>Tupy (alocado):</strong> Ajuste de sistemas legados para comunicação com SAP.',
+                    '<strong>Thomson Reuters (alocado):</strong> Atuação como QA em e-Social.',
+                    '<strong>Cativa Têxtil (remoto):</strong> Manutenção em sistemas de pedidos.'
+                ],
+                skills: ['ERP', 'Cupom Fiscal', 'PAF-ECF', 'NF-e', 'NFS-e', 'CTe', 'Boletos', 'Febraban', 'SQL', 'Firebird', 'SQL Server', 'Oracle', 'Delphi', 'ACBr', 'DLL', 'XML', 'Scrum']
+            },
+            {
+                company: 'MWA Sistemas',
+                location: 'Joinville',
+                role: 'Analista e Desenvolvedor Delphi',
+                period: 'NOV 2011 – MAR 2014',
+                description: [
+                    'Analisar regras de negócio.',
+                    'Desenvolver novas funcionalidades.',
+                    'Realizar manutenção nos sistemas gerenciais e fiscais.',
+                    'Realizar intervenção em banco de dados Firebird e SQL Server.'
+                ],
+                skills: ['ERP', 'Cupom Fiscal', 'PAF-ECF', 'NF-e', 'CTe', 'Boletos', 'Febraban', 'SQL', 'Firebird', 'SQL Server', 'Delphi', 'ACBr', 'FlexDocs', 'DLL', 'XML']
+            },
+            {
+                company: 'Softin Sistemas',
+                location: 'Joinville',
+                role: 'Desenvolvedor Delphi',
+                period: 'JAN 2010 – ABR 2011',
+                description: [
+                    'Realizar manutenção de sistemas gerenciais e fiscais.'
+                ],
+                skills: ['ERP', 'Cupom Fiscal', 'PAF-ECF', 'NF-e', 'CTe', 'Boletos', 'Febraban', 'SQL', 'Firebird', 'SQL Server', 'Delphi', 'PHP', 'SOAP', 'WSDL']
+            }
+        ];
+
+        const skillsListEl = document.getElementById('skills-list');
+        const timelineContainerEl = document.getElementById('timeline-container');
+        const resetFilterBtn = document.getElementById('reset-filter');
+        const noResultsEl = document.getElementById('no-results');
+
+        let allSkills = [];
+        let activeFilter = null;
+
+        function renderTimeline(filterSkill = null) {
+            timelineContainerEl.innerHTML = '';
+            let filteredExperiences = experiencesData;
+            
+            if(filterSkill) {
+                filteredExperiences = experiencesData.filter(exp => exp.skills.map(s => s.toUpperCase()).includes(filterSkill.toUpperCase()));
+            }
+
+            if (filteredExperiences.length === 0) {
+                noResultsEl.classList.remove('hidden');
+            } else {
+                noResultsEl.classList.add('hidden');
+            }
+
+            filteredExperiences.forEach(exp => {
+                const item = document.createElement('div');
+                item.className = 'timeline-item relative pl-12 pb-8 fade-in';
+                item.innerHTML = `
+                    <div class="timeline-dot"></div>
+                    <div class="cursor-pointer group bg-white/60 p-4 rounded-lg shadow-sm hover:shadow-md transition-shadow border border-gray-200/80">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center">
+                            <h3 class="text-lg font-bold text-gray-800">${exp.role}</h3>
+                            <span class="text-sm text-gray-500 mt-1 md:mt-0 font-medium">${exp.period}</span>
+                        </div>
+                        <p class="text-md text-[#81b29a] font-semibold">${exp.company} - ${exp.location}</p>
+                        <div class="details hidden mt-4 pt-4 border-t border-gray-200">
+                            <ul class="list-disc list-inside text-gray-600 space-y-2 mb-4 text-sm">
+                                ${exp.description.map(d => `<li>${d}</li>`).join('')}
+                            </ul>
+                            <div class="flex flex-wrap gap-2">
+                                ${exp.skills.map(s => `<span class="bg-gray-200 text-gray-700 text-xs font-semibold px-2.5 py-1 rounded-full">${s}</span>`).join('')}
+                            </div>
+                        </div>
+                    </div>
+                `;
+                timelineContainerEl.appendChild(item);
+
+                item.querySelector('.group').addEventListener('click', () => {
+                    item.querySelector('.details').classList.toggle('hidden');
+                });
+            });
+        }
+
+        function renderSkills() {
+            const skillCounts = experiencesData.flatMap(exp => exp.skills)
+                .reduce((acc, skill) => {
+                    acc[skill] = (acc[skill] || 0) + 1;
+                    return acc;
+                }, {});
+            
+            allSkills = [...new Set(Object.keys(skillCounts))].sort((a,b) => a.localeCompare(b));
+
+            skillsListEl.innerHTML = '';
+            allSkills.forEach(skill => {
+                const tag = document.createElement('button');
+                tag.className = 'skill-tag bg-gray-100 text-gray-600 text-sm font-medium px-3 py-1.5 rounded-lg hover:bg-gray-200 transition-colors';
+                tag.textContent = skill;
+                tag.dataset.skill = skill;
+                skillsListEl.appendChild(tag);
+            });
+        }
+        
+        function updateActiveSkillTag(skill) {
+            document.querySelectorAll('.skill-tag').forEach(tag => {
+                tag.classList.remove('active');
+                if (tag.dataset.skill === skill) {
+                    tag.classList.add('active');
+                }
+            });
+        }
+        
+        skillsListEl.addEventListener('click', (e) => {
+            if (e.target.classList.contains('skill-tag')) {
+                const skill = e.target.dataset.skill;
+                if (activeFilter === skill) {
+                    activeFilter = null;
+                    renderTimeline();
+                    updateActiveSkillTag(null);
+                } else {
+                    activeFilter = skill;
+                    renderTimeline(skill);
+                    updateActiveSkillTag(skill);
+                }
+            }
+        });
+
+        resetFilterBtn.addEventListener('click', () => {
+            activeFilter = null;
+            renderTimeline();
+            updateActiveSkillTag(null);
+        });
+
+        function renderSkillsChart() {
+            const skillFrequency = experiencesData.flatMap(exp => exp.skills)
+                .reduce((acc, skill) => {
+                    let key = skill.toUpperCase();
+                    if (key.includes('DELPHI')) key = 'DELPHI';
+                    if (key.includes('SQL SERVER')) key = 'SQL SERVER';
+                    if (key.includes('FIREBIRD')) key = 'FIREBIRD';
+                    if (key.includes('ORACLE')) key = 'ORACLE';
+                     if (key.includes('SCRUM')) key = 'SCRUM';
+
+                    acc[key] = (acc[key] || 0) + 1;
+                    return acc;
+                }, {});
+            
+            const sortedSkills = Object.entries(skillFrequency)
+                .sort(([,a],[,b]) => b-a)
+                .slice(0, 7)
+                .reverse();
+            
+            const labels = sortedSkills.map(item => item[0].charAt(0).toUpperCase() + item[0].slice(1).toLowerCase());
+            const data = sortedSkills.map(item => item[1]);
+
+            const ctx = document.getElementById('skillsChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Nº de Experiências',
+                        data: data,
+                        backgroundColor: 'rgba(129, 178, 154, 0.6)',
+                        borderColor: 'rgba(129, 178, 154, 1)',
+                        borderWidth: 1,
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                             backgroundColor: '#3d405b',
+                             titleFont: { size: 14 },
+                             bodyFont: { size: 12 },
+                             padding: 10,
+                             cornerRadius: 4,
+                        }
+                    },
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(200, 200, 200, 0.1)'
+                            },
+                             ticks: {
+                                precision: 0,
+                                font: {
+                                    size: 10
+                                }
+                            }
+                        },
+                        y: {
+                            grid: {
+                                display: false
+                            },
+                             ticks: {
+                                font: {
+                                    size: 11
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderTimeline();
+            renderSkills();
+            renderSkillsChart();
+        });
+    </script>
+</body>
+</html>
